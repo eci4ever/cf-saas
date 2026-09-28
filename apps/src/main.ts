@@ -14,6 +14,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <div>
     <h1>Get started</h1>
     <p>Edit <code>src/main.ts</code> and save to test <code>HMR</code></p>
+    <p id="api-status">Checking API…</p>
   </div>
   <button id="counter" type="button" class="counter"></button>
 </section>
@@ -58,3 +59,14 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
 `;
 
 setupCounter(document.querySelector<HTMLButtonElement>("#counter")!);
+
+const apiStatus = document.querySelector<HTMLParagraphElement>("#api-status")!;
+
+fetch("/api/health")
+  .then((res) => res.json())
+  .then((data: { ok: boolean }) => {
+    apiStatus.textContent = data.ok ? "API healthy" : "API error";
+  })
+  .catch(() => {
+    apiStatus.textContent = "API unreachable";
+  });

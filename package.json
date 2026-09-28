@@ -4,7 +4,7 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "apps/*",
+    "apps",
     "tools/*"
   ],
   "type": "module",
@@ -28,5 +28,9 @@
   },
   "engines": {
     "node": ">=22.18.0"
+  },
+  "allowScripts": {
+    "workerd@1.20260926.1": true,
+    "esbuild@0.28.1": true
   }
 }

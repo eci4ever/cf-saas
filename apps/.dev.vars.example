@@ -1,0 +1,4 @@
+# Copy to .dev.vars and fill in values for local development.
+# Production secrets are managed with `wrangler secret put <KEY>`.
+API_KEY=
+# JWT_SECRET=
