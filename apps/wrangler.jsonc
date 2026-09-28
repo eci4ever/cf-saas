@@ -14,4 +14,7 @@
   "placement": {
     "mode": "smart",
   },
+  "vars": {
+    "BETTER_AUTH_URL": "https://cf-saas.eci4ever.workers.dev",
+  },
 }

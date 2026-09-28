@@ -1,13 +1,13 @@
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
+import { createAuth, type AuthEnv } from "./auth.js";
 import { createDb } from "./db.js";
 import { tasks } from "./schema.js";
 
-type Bindings = {
+type Bindings = AuthEnv & {
   ASSETS: {
     fetch: (request: Request) => Promise<Response>;
   };
-  DATABASE_URL: string;
 };
 
 let startedAt: number | undefined;
@@ -52,6 +52,7 @@ const api = new Hono<{ Bindings: Bindings }>()
   });
 
 app.route("/api", api);
+app.on(["POST", "GET"], "/api/auth/*", (c) => createAuth(c.env).handler(c.req.raw));
 app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 app.get("*", (c) => c.env.ASSETS.fetch(c.req.raw));
 
