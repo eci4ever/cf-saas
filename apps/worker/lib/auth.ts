@@ -1,8 +1,8 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin, organization } from "better-auth/plugins";
-import { createDb } from "./db.js";
-import * as authSchema from "./auth-schema.js";
+import { createDb } from "../db/index.js";
+import * as authSchema from "../db/auth-schema.js";
 
 export type AuthEnv = {
   DATABASE_URL: string;

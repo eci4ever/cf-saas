@@ -1,8 +1,8 @@
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
-import { createAuth, type AuthEnv } from "./auth.js";
-import { createDb } from "./db.js";
-import { tasks } from "./schema.js";
+import { createAuth, type AuthEnv } from "../lib/auth.js";
+import { createDb } from "../db/index.js";
+import { tasks } from "../db/schema.js";
 
 type Bindings = AuthEnv & {
   ASSETS: {

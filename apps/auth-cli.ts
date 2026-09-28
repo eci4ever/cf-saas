@@ -1,4 +1,4 @@
-import { createAuth } from "./worker/auth.js";
+import { createAuth } from "./worker/lib/auth.js";
 
 declare const process: { env: Record<string, string | undefined> };
 
