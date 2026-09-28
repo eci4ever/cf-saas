@@ -1,14 +1,9 @@
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
-import { createAuth, type AuthEnv } from "../lib/auth.js";
-import { createDb } from "../db/index.js";
-import { tasks } from "../db/schema.js";
-
-type Bindings = AuthEnv & {
-  ASSETS: {
-    fetch: (request: Request) => Promise<Response>;
-  };
-};
+import { createDb } from "./db/index.js";
+import { createAuth } from "./lib/auth.js";
+import type { Bindings } from "./lib/env.js";
+import { tasksRoutes } from "./routes/tasks.js";
 
 let startedAt: number | undefined;
 
@@ -36,20 +31,9 @@ const api = new Hono<{ Bindings: Bindings }>()
       db: { status: dbStatus, latency_ms: dbLatencyMs },
     });
   })
-  .get("/hello/:name", (c) => c.json({ message: `Hello, ${c.req.param("name")}!` }))
-  .get("/tasks", async (c) => {
-    const db = createDb(c.env.DATABASE_URL);
-    const rows = await db.select().from(tasks).orderBy(tasks.id);
-    return c.json(rows);
-  })
-  .post("/tasks", async (c) => {
-    const body = await c.req.json<{ title?: string }>().catch(() => null);
-    const title = body?.title?.trim();
-    if (!title) return c.json({ error: "title is required" }, 400);
-    const db = createDb(c.env.DATABASE_URL);
-    const [row] = await db.insert(tasks).values({ title }).returning();
-    return c.json(row, 201);
-  });
+  .get("/hello/:name", (c) => c.json({ message: `Hello, ${c.req.param("name")}!` }));
+
+api.route("/", tasksRoutes);
 
 app.route("/api", api);
 app.on(["POST", "GET"], "/api/auth/*", (c) => createAuth(c.env).handler(c.req.raw));
