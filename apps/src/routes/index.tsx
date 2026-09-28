@@ -1,157 +1,78 @@
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { Badge } from "@/components/ui/badge";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { ArrowRightIcon, SparklesIcon } from "lucide-react";
+
+import { BrandMark } from "@/components/landing/brand-mark";
+import { StatusPills } from "@/components/landing/status-pills";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
-import { Input } from "@/components/ui/input";
+import { STACK } from "@/lib/brand";
 
-export const Route = createFileRoute("/")({
-  component: Home,
-});
-
-type Health = { ok: boolean; timestamp: number };
-type Hello = { message: string };
-type Task = { id: number; title: string; done: number; createdAt: string };
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-  return res.json() as Promise<T>;
-}
-
-function Home() {
-  const queryClient = useQueryClient();
-  const [name, setName] = useState("world");
-  const [title, setTitle] = useState("");
-
-  const health = useQuery({
-    queryKey: ["health"],
-    queryFn: () => fetchJson<Health>("/api/health"),
-  });
-
-  const hello = useQuery({
-    queryKey: ["hello", name],
-    queryFn: () => fetchJson<Hello>(`/api/hello/${encodeURIComponent(name)}`),
-  });
-
-  const tasks = useQuery({
-    queryKey: ["tasks"],
-    queryFn: () => fetchJson<Task[]>("/api/tasks"),
-  });
-
-  const addTask = useMutation({
-    mutationFn: (newTitle: string) =>
-      fetchJson<Task>("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTitle }),
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      setTitle("");
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = title.trim();
-    if (trimmed) addTask.mutate(trimmed);
-  };
-
+function Landing() {
   return (
-    <section className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">cf-saas</h1>
-        <p className="text-sm text-muted-foreground">
-          React + TanStack + shadcn/ui (Base UI) + Hono + Drizzle on Neon — one origin.
-        </p>
+    <div className="bg-background text-foreground relative isolate flex min-h-svh flex-col overflow-hidden">
+      <div className="from-foreground/[0.05] dark:from-foreground/[0.08] pointer-events-none absolute inset-x-0 top-0 -z-20 h-[560px] bg-linear-to-b to-transparent" />
+      <div className="pointer-events-none absolute inset-0 -z-20 overflow-hidden">
+        <div className="bg-foreground/10 dark:bg-foreground/15 absolute top-[-240px] left-1/2 size-[720px] -translate-x-1/2 rounded-full blur-[140px]" />
+        <div className="bg-foreground/[0.07] dark:bg-foreground/[0.09] absolute top-[-160px] left-[16%] size-[420px] rounded-full blur-[120px]" />
+        <div className="bg-foreground/[0.05] dark:bg-foreground/[0.07] absolute top-[-120px] right-[14%] size-[380px] rounded-full blur-[120px]" />
       </div>
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_right,color-mix(in_oklab,var(--border)_85%,transparent)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklab,var(--border)_85%,transparent)_1px,transparent_1px)] [background-size:72px_72px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,black,transparent)]" />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">API status</span>
-        {health.isError ? (
-          <Badge variant="destructive">Offline</Badge>
-        ) : health.data?.ok ? (
-          <Badge variant="secondary">Healthy</Badge>
-        ) : (
-          <Badge variant="outline">Checking…</Badge>
-        )}
-      </div>
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-5">
+        <BrandMark />
+        <div className="flex shrink-0 items-center gap-3">
+          <Link
+            to="/login"
+            className="text-muted-foreground hover:text-foreground hidden text-sm font-medium transition-colors sm:block"
+          >
+            Sign in
+          </Link>
+          <Button
+            nativeButton={false}
+            render={<Link to="/signup" />}
+            className="h-9 rounded-full px-4"
+          >
+            Get started
+          </Button>
+        </div>
+      </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Tasks</CardTitle>
-          <CardDescription>Stored in Neon Postgres via the Hono API.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          {tasks.isError ? (
-            <p className="text-sm text-destructive">{String(tasks.error)}</p>
-          ) : tasks.data && tasks.data.length > 0 ? (
-            tasks.data.map((task) => (
-              <div
-                key={task.id}
-                className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
-              >
-                <span className="text-sm">{task.title}</span>
-                <Badge variant={task.done ? "secondary" : "outline"}>
-                  {task.done ? "Done" : "Pending"}
-                </Badge>
-              </div>
-            ))
-          ) : (
-            <Empty>
-              <EmptyHeader>
-                <EmptyTitle>No tasks yet</EmptyTitle>
-                <EmptyDescription>Add your first task below.</EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          )}
-        </CardContent>
-        <CardFooter>
-          <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="New task…"
-              aria-label="New task title"
-            />
-            <Button type="submit" disabled={addTask.isPending || title.trim().length === 0}>
-              Add
-            </Button>
-          </form>
-        </CardFooter>
-      </Card>
+      <main className="flex flex-1 items-center justify-center px-6 pb-16">
+        <section className="mx-auto flex w-full max-w-6xl flex-col items-center gap-6 text-center">
+          <span className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both border-border bg-muted/60 text-muted-foreground inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium duration-700">
+            <SparklesIcon className="size-3.5" />
+            Built with Cloudflare Workers, Hono &amp; Neon
+          </span>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Hello API</CardTitle>
-          <CardDescription>Query key reacts to the name you type.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Your name"
-            aria-label="Name"
-          />
-          <p className="text-sm">
-            {hello.isPending
-              ? "Loading…"
-              : hello.isError
-                ? String(hello.error)
-                : hello.data.message}
+          <h1 className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both font-heading max-w-3xl text-4xl font-semibold tracking-tighter text-balance delay-100 duration-700 sm:text-6xl">
+            <span className="bg-linear-to-b from-foreground via-foreground to-foreground/40 bg-clip-text text-transparent">
+              Ship your SaaS faster with a Cloudflare starter
+            </span>
+          </h1>
+
+          <p className="animate-in fade-in slide-in-from-bottom-2 text-muted-foreground fill-mode-both max-w-xl text-lg leading-8 text-balance delay-200 duration-700">
+            Hono API, React SPA, and Neon Postgres with typed queries and live status — one Worker,
+            one origin. Clone it, brand it, ship it.
           </p>
-        </CardContent>
-      </Card>
-    </section>
+
+          <div className="animate-in fade-in fill-mode-both flex w-full items-center justify-center delay-300 duration-700 sm:w-auto">
+            <Button
+              nativeButton={false}
+              render={<Link to="/signup" />}
+              className="h-12 w-full rounded-full px-6 text-base sm:w-auto"
+            >
+              Get started
+              <ArrowRightIcon data-icon="inline-end" />
+            </Button>
+          </div>
+
+          <div className="animate-in fade-in fill-mode-both flex flex-col items-center gap-3 delay-[450ms] duration-700">
+            <StatusPills />
+            <p className="text-muted-foreground text-xs">{STACK.join(" · ")}</p>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }
+
+export const Route = createFileRoute("/")({ component: Landing });

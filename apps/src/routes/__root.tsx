@@ -1,27 +1,33 @@
-import { createRootRoute, Link, Outlet } from "@tanstack/react-router";
+import { Link, Outlet, createRootRoute } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { BRAND_NAME } from "@/lib/brand";
+
+function RootLayout() {
+  return (
+    <div className="bg-background flex min-h-svh flex-col">
+      <Outlet />
+    </div>
+  );
+}
+
+function NotFound() {
+  return (
+    <div className="flex min-h-svh flex-col items-center justify-center gap-4 px-6 text-center">
+      <p className="text-muted-foreground text-xs font-medium tracking-widest uppercase">404</p>
+      <h1 className="font-heading text-3xl font-semibold tracking-tighter text-balance">
+        Nothing here
+      </h1>
+      <p className="text-muted-foreground max-w-sm text-sm">
+        {BRAND_NAME} is a single landing page for now.
+      </p>
+      <Button nativeButton={false} render={<Link to="/" />} className="h-10 rounded-full px-5">
+        Back to the landing page
+      </Button>
+    </div>
+  );
+}
 
 export const Route = createRootRoute({
-  component: () => (
-    <div className="min-h-svh">
-      <nav className="flex items-center gap-5 border-b px-6 py-3">
-        <Link
-          to="/"
-          className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          activeProps={{ className: "text-foreground" }}
-        >
-          Home
-        </Link>
-        <Link
-          to="/about"
-          className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          activeProps={{ className: "text-foreground" }}
-        >
-          About
-        </Link>
-      </nav>
-      <main className="mx-auto w-full max-w-2xl px-6 py-8">
-        <Outlet />
-      </main>
-    </div>
-  ),
+  component: RootLayout,
+  notFoundComponent: NotFound,
 });
