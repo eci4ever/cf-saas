@@ -1,6 +1,18 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -8,15 +20,18 @@ export const Route = createFileRoute("/")({
 
 type Health = { ok: boolean; timestamp: number };
 type Hello = { message: string };
+type Task = { id: number; title: string; done: number; createdAt: string };
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url);
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json() as Promise<T>;
 }
 
 function Home() {
+  const queryClient = useQueryClient();
   const [name, setName] = useState("world");
+  const [title, setTitle] = useState("");
 
   const health = useQuery({
     queryKey: ["health"],
@@ -28,39 +43,115 @@ function Home() {
     queryFn: () => fetchJson<Hello>(`/api/hello/${encodeURIComponent(name)}`),
   });
 
-  return (
-    <section>
-      <h1>cf-saas</h1>
-      <p>React + TanStack Router (file-based) + TanStack Query on a single origin.</p>
+  const tasks = useQuery({
+    queryKey: ["tasks"],
+    queryFn: () => fetchJson<Task[]>("/api/tasks"),
+  });
 
-      <div className="card">
-        <h2>API status</h2>
-        {health.isPending ? (
-          <p>Loading…</p>
-        ) : health.isError ? (
-          <p className="error">{String(health.error)}</p>
+  const addTask = useMutation({
+    mutationFn: (newTitle: string) =>
+      fetchJson<Task>("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      setTitle("");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = title.trim();
+    if (trimmed) addTask.mutate(trimmed);
+  };
+
+  return (
+    <section className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">cf-saas</h1>
+        <p className="text-sm text-muted-foreground">
+          React + TanStack + shadcn/ui (Base UI) + Hono + Drizzle on Neon — one origin.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm text-muted-foreground">API status</span>
+        {health.isError ? (
+          <Badge variant="destructive">Offline</Badge>
+        ) : health.data?.ok ? (
+          <Badge variant="secondary">Healthy</Badge>
         ) : (
-          <p>
-            <span className={health.data.ok ? "ok" : "error"}>
-              {health.data.ok ? "Healthy" : "Error"}
-            </span>{" "}
-            <code>{new Date(health.data.timestamp).toLocaleTimeString()}</code>
-          </p>
+          <Badge variant="outline">Checking…</Badge>
         )}
       </div>
 
-      <div className="card">
-        <h2>Hello API</h2>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Your name"
-          aria-label="Name"
-        />
-        <p>
-          {hello.isPending ? "Loading…" : hello.isError ? String(hello.error) : hello.data.message}
-        </p>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Tasks</CardTitle>
+          <CardDescription>Stored in Neon Postgres via the Hono API.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+          {tasks.isError ? (
+            <p className="text-sm text-destructive">{String(tasks.error)}</p>
+          ) : tasks.data && tasks.data.length > 0 ? (
+            tasks.data.map((task) => (
+              <div
+                key={task.id}
+                className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
+              >
+                <span className="text-sm">{task.title}</span>
+                <Badge variant={task.done ? "secondary" : "outline"}>
+                  {task.done ? "Done" : "Pending"}
+                </Badge>
+              </div>
+            ))
+          ) : (
+            <Empty>
+              <EmptyHeader>
+                <EmptyTitle>No tasks yet</EmptyTitle>
+                <EmptyDescription>Add your first task below.</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+        </CardContent>
+        <CardFooter>
+          <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="New task…"
+              aria-label="New task title"
+            />
+            <Button type="submit" disabled={addTask.isPending || title.trim().length === 0}>
+              Add
+            </Button>
+          </form>
+        </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Hello API</CardTitle>
+          <CardDescription>Query key reacts to the name you type.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
+            aria-label="Name"
+          />
+          <p className="text-sm">
+            {hello.isPending
+              ? "Loading…"
+              : hello.isError
+                ? String(hello.error)
+                : hello.data.message}
+          </p>
+        </CardContent>
+      </Card>
     </section>
   );
 }
